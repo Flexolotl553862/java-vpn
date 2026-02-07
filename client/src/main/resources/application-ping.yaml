@@ -1,0 +1,13 @@
+tun:
+  mock: ping
+  address: 10.2.1.2
+
+vpn:
+  server:
+    remote-address: 185.10.19.139
+    remote-port: 18083
+
+logging:
+  level:
+    com:
+      stevesad: INFO
