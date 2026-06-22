@@ -1,0 +1,27 @@
+name: Build
+description: Build Spring Boot jar
+
+inputs:
+  module:
+    description: Gradle module to build
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up JDK
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: 25
+
+    - name: Grant execute permission
+      run: chmod +x ./gradlew
+      shell: bash
+
+    - name: Build server jar
+      run: ./gradlew "${{ inputs.module }}:bootJar"
+      shell: bash
