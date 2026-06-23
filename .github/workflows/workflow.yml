@@ -1,0 +1,40 @@
+name: General Workflow
+
+on:
+  release:
+    types: [ published ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Build server jar
+        uses: ./.github/actions/build-gradle
+        with:
+          module: server
+
+      - name: Build client jar
+        uses: ./.github/actions/build-gradle
+        with:
+          module: client
+
+  docker-push:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Push server image
+        uses: ./.github/actions/docker-push
+        with:
+          module: server
+          version: ${{ github.event.release.tag_name }}
+          image: ${{ secrets.DOCKERHUB_USERNAME }}/java-vpn-server
+          dockerhub_username: ${{ secrets.DOCKERHUB_USERNAME }}
+          dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
