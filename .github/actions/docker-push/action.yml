@@ -14,6 +14,9 @@ inputs:
   dockerhub_token:
     description: Docker Hub token
     required: true
+  version:
+    description: Version tag
+    required: true
 
 runs:
   using: composite
@@ -22,13 +25,6 @@ runs:
       uses: ./.github/actions/build-gradle
       with:
         module: ${{ inputs.module }}
-
-    - name: Extract version
-      id: version
-      shell: bash
-      run: |
-        VERSION=${GITHUB_REF_NAME#release-}
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
 
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
@@ -49,5 +45,5 @@ runs:
         platforms: linux/amd64,linux/arm64
         push: true
         tags: |
-          ${{ inputs.image }}:${{ steps.version.outputs.version }}
+          ${{ inputs.image }}:${{ inputs.version }}
           ${{ inputs.image }}:latest
