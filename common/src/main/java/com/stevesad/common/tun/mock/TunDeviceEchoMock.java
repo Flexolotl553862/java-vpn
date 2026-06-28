@@ -2,7 +2,6 @@ package com.stevesad.common.tun.mock;
 
 import com.stevesad.common.tun.TunDevice;
 import com.stevesad.common.tun.TunDeviceProperties;
-import com.stevesad.common.utils.TestUtils;
 import io.netty.buffer.Unpooled;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -62,7 +61,7 @@ public class TunDeviceEchoMock implements TunDevice {
 
         try {
             lock.lock();
-            packetQueue.add(TestUtils.revertPacket(Unpooled.wrappedBuffer(data)).getRawData());
+            packetQueue.add(MockUtils.revertPacket(Unpooled.wrappedBuffer(data)).getRawData());
             queueEmptyCondition.signal();
             return readableBytes;
         } catch (Exception e) {

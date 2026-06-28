@@ -10,11 +10,10 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.LinkedBlockingQueue;
 
 @Slf4j
 @Component
@@ -23,29 +22,21 @@ public class TunPacketConsumer {
 
     private final TunDevice tunDevice;
 
-    private final ConcurrentLinkedQueue<ByteBuf> packetQueue = new ConcurrentLinkedQueue<>();
+    private final BlockingQueue<ByteBuf> packetQueue = new LinkedBlockingQueue<>();
     private final ExecutorService pollingThread = Executors.newSingleThreadExecutor();
-    private final ReentrantLock lock = new ReentrantLock();
-    private final Condition queueEmptyCondition = lock.newCondition();
 
     @PostConstruct
     public void startPollingLoop() {
         pollingThread.execute(() -> {
             while (!Thread.interrupted()) {
-                lock.lock();
                 try {
-                    while (packetQueue.isEmpty()) {
-                        queueEmptyCondition.await();
-                    }
-                    ByteBuf packet = packetQueue.poll();
+                    ByteBuf packet = packetQueue.take();
                     sendNettyBuf(packet);
                     packet.release();
                 } catch (IOException e) {
                     log.error(e.getMessage());
                 } catch (InterruptedException ignored) {
 
-                } finally {
-                    lock.unlock();
                 }
             }
         });
@@ -63,21 +54,10 @@ public class TunPacketConsumer {
     }
 
     public void handleSingle(ByteBuf buf) {
-        queueNotEmptyNotify();
         packetQueue.add(buf);
     }
 
     public void handleBatch(ByteBuf batch) {
-        queueNotEmptyNotify();
         // TODO
-    }
-
-    private void queueNotEmptyNotify() {
-        try {
-            lock.lock();
-            queueEmptyCondition.signal();
-        } finally {
-            lock.unlock();
-        }
     }
 }
