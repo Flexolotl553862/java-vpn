@@ -27,11 +27,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-logging")
 
-    implementation("io.projectreactor.netty:reactor-netty-quic")
-    implementation("io.netty:netty-codec-native-quic::osx-aarch_64")
+    implementation("io.projectreactor.netty:reactor-netty:1.3.6")
     implementation("io.netty:netty-pkitesting")
 
-//    implementation("org.pcap4j:pcap4j-core:1.8.2")
     implementation("org.pcap4j:pcap4j-packetfactory-static:1.8.2")
 
     implementation(project(":common"))

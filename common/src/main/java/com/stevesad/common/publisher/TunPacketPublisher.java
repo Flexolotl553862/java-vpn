@@ -15,6 +15,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -28,10 +29,9 @@ public class TunPacketPublisher {
     private final TunDevice tunDevice;
     private final TunDeviceProperties tunDeviceProperties;
     private final PacketBatchingProperties packetBatchingProperties;
-    private final NettyBufAllocator bufAllocator;
 
     private final ExecutorService pollingThread = Executors.newSingleThreadExecutor();
-    private final Sinks.Many<ByteBuf> hotSource = Sinks.many().multicast().directBestEffort();
+    private final Sinks.Many<ByteBuf> hotSource = Sinks.many().multicast().onBackpressureBuffer();
 
     @PostConstruct
     public void startPollingLoop() {
@@ -39,7 +39,7 @@ public class TunPacketPublisher {
             while (!Thread.interrupted()) {
                 try {
                     var emitResult = hotSource.tryEmitNext(receiveNettyBuf());
-                    if (emitResult.isFailure()) {
+                    if (emitResult.isFailure() && !emitResult.equals(Sinks.EmitResult.FAIL_OVERFLOW)) {
                         log.warn("Tun publisher emit failure: {}", emitResult.name());
                     }
                 } catch (IOException e) {
@@ -50,18 +50,21 @@ public class TunPacketPublisher {
     }
 
     private ByteBuf receiveNettyBuf() throws IOException {
-        ByteBuf buf = bufAllocator.allocate(2 * tunDeviceProperties.getMtu());
+        ByteBuf buf = PooledByteBufAllocator.DEFAULT.directBuffer(2 * tunDeviceProperties.getMtu());
+        buf.clear();
+
         int oldWriterIndex = buf.writerIndex();
-        int receivedBytes = tunDevice.receive(buf.internalNioBuffer(0, buf.capacity()), oldWriterIndex);
+        ByteBuffer internalBuffer = buf.internalNioBuffer(0, buf.capacity());
+        int receivedBytes = tunDevice.receive(internalBuffer, internalBuffer.position());
+
         buf.writerIndex(oldWriterIndex + receivedBytes);
-        return buf.retainedSlice(oldWriterIndex, receivedBytes);
+        return buf;
     }
 
     @PreDestroy
     public void stopPollingLoop() {
         pollingThread.shutdown();
         pollingThread.shutdownNow();
-//        bufAllocator.clear();
         hotSource.tryEmitComplete();
     }
 

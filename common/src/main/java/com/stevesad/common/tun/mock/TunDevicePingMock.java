@@ -2,7 +2,6 @@ package com.stevesad.common.tun.mock;
 
 import com.stevesad.common.tun.TunDevice;
 import com.stevesad.common.tun.TunDeviceProperties;
-import com.stevesad.common.utils.TestUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.pcap4j.packet.IllegalRawDataException;
@@ -25,10 +24,10 @@ public class TunDevicePingMock implements TunDevice {
 
     private final TunDeviceProperties tunDeviceProperties;
 
-    private Map<Short, Instant> unhandledRequests = new ConcurrentHashMap<>();
+    private final Map<Short, Instant> unhandledRequests = new ConcurrentHashMap<>();
     private final AtomicInteger counter = new AtomicInteger(1);
 
-    private static final Duration PING_DURATION = Duration.ofMillis(1);
+    private static final Duration PING_DURATION = Duration.ofMillis(1000);
 
     @Override
     public int receive(ByteBuffer readBuffer, int writerIndex) {
@@ -40,7 +39,7 @@ public class TunDevicePingMock implements TunDevice {
 
         short seq = (short) counter.getAndIncrement();
 
-        var packet = TestUtils.createIcmpEchoPacket(
+        var packet = MockUtils.createIcmpEchoPacket(
                         tunDeviceProperties.getAddress().getHostAddress(), "8.8.8.8", seq, (short) 0)
                 .getRawData();
 
@@ -56,7 +55,7 @@ public class TunDevicePingMock implements TunDevice {
         packetBuffer.get(data);
 
         try {
-            var reply = TestUtils.readRawIcmpEchoPacket(data);
+            var reply = MockUtils.readRawIcmpEchoPacket(data);
 
             var requestTime = unhandledRequests.get(reply.getHeader().getSequenceNumber());
 
