@@ -24,9 +24,11 @@ dependencyManagement {
 }
 
 dependencies {
+    // Spring Boot starter
     implementation("org.springframework:spring-core")
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-logging")
+    implementation("org.springframework.boot:spring-boot-starter-webclient")
 
     implementation("io.projectreactor.netty:reactor-netty-core")
 

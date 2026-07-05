@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.stevesad"
-description = "server"
+description = "VPN Server"
 
 configurations {
     compileOnly {
@@ -24,11 +24,24 @@ dependencyManagement {
 }
 
 dependencies {
+    // Spring Boot starters
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-logging")
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
+    implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.springframework.boot:spring-boot-starter-liquibase")
+    implementation("org.springframework.boot:spring-boot-starter-security")
 
+    // PostgreSQL
+    implementation("org.postgresql:postgresql:42.7.11")
+
+    // Reactor Netty
     implementation("io.projectreactor.netty:reactor-netty:1.3.6")
-    implementation("io.netty:netty-pkitesting")
+
+    // Bouncy Castle
+    implementation("org.bouncycastle:bcprov-jdk18on:1.84")
+    implementation("org.bouncycastle:bcpkix-jdk18on:1.84")
 
     implementation("org.pcap4j:pcap4j-packetfactory-static:1.8.2")
 

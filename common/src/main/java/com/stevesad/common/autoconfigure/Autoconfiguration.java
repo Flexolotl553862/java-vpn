@@ -5,4 +5,4 @@ import org.springframework.context.annotation.ComponentScan;
 
 @AutoConfiguration
 @ComponentScan("com.stevesad.common")
-public class TunAutoconfiguration {}
+public class Autoconfiguration {}
