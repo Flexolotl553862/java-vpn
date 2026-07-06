@@ -27,7 +27,6 @@ dependencies {
     // Spring Boot starters
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-logging")
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-liquibase")
@@ -38,6 +37,7 @@ dependencies {
 
     // Reactor Netty
     implementation("io.projectreactor.netty:reactor-netty:1.3.6")
+    implementation("io.projectreactor.netty:reactor-netty-quic:1.3.6")
 
     // Bouncy Castle
     implementation("org.bouncycastle:bcprov-jdk18on:1.84")

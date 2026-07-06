@@ -1,17 +1,15 @@
-package com.stevesad.server.api;
+package com.stevesad.server.quic;
 
 import com.stevesad.common.utils.CertificateUtils;
 import com.stevesad.server.domain.ClientCertificate;
 import com.stevesad.server.domain.ServerCertificate;
 import com.stevesad.server.repository.ClientCertificateRepository;
 import com.stevesad.server.repository.ServerCertificateRepository;
+import io.netty.handler.codec.quic.QuicSslContext;
+import io.netty.handler.codec.quic.QuicSslContextBuilder;
 import io.netty.handler.ssl.ClientAuth;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.reactor.netty.NettyReactiveWebServerFactory;
-import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -22,13 +20,13 @@ import java.util.List;
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
-public class NettyServerConfiguration {
+public class QuicSslConfiguration {
 
     private final ServerCertificateRepository serverCertificateRepository;
     private final ClientCertificateRepository clientCertificateRepository;
 
     @Bean
-    public WebServerFactoryCustomizer<NettyReactiveWebServerFactory> nettyCustomizer() throws Exception {
+    public QuicSslContext quicSslContext() throws Exception {
         ServerCertificate serverCert = serverCertificateRepository
                 .getAny()
                 .orElseThrow(() -> new RuntimeException("No available server certificate found"));
@@ -40,14 +38,13 @@ public class NettyServerConfiguration {
             trustedCerts.add(x509);
         }
 
-        SslContext sslContext = SslContextBuilder.forServer(
+        return QuicSslContextBuilder.forServer(
                         CertificateUtils.parsePrivateKey(serverCert.getPrivateKeyPem()),
+                        null,
                         CertificateUtils.parseCertificate(serverCert.getCertPem()))
-                .trustManager(trustedCerts)
+                .trustManager(trustedCerts.toArray(new X509Certificate[0]))
                 .clientAuth(ClientAuth.REQUIRE)
+                .applicationProtocols("h3")
                 .build();
-
-        return factory -> factory.addServerCustomizers(
-                server -> server.secure(sslContextSpec -> sslContextSpec.sslContext(sslContext)));
     }
 }

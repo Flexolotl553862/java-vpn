@@ -8,9 +8,6 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/changelog-master.yaml
 
-server:
-  port: 8082
-
 tun:
   mock: echo
   address: 10.2.1.1
@@ -20,3 +17,10 @@ logging:
     com.stevesad: DEBUG
     reactor.netty.http.server: DEBUG
     org.springframework.security: DEBUG
+#    io:
+#      netty:
+#        handler:
+#          ssl: DEBUG
+#    reactor:
+#      netty:
+#        quic: DEBUG

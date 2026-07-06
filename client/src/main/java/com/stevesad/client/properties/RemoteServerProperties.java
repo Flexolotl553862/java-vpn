@@ -1,4 +1,4 @@
-package com.stevesad.client.udp;
+package com.stevesad.client.properties;
 
 import lombok.Getter;
 import lombok.Setter;

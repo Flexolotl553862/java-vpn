@@ -8,37 +8,40 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
+import reactor.util.concurrent.Queues;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@EnableConfigurationProperties(PacketBatchingProperties.class)
 public class TunPacketPublisher {
 
     private final TunDevice tunDevice;
     private final TunDeviceProperties tunDeviceProperties;
-    private final PacketBatchingProperties packetBatchingProperties;
 
     private final ExecutorService pollingThread = Executors.newSingleThreadExecutor();
-    private final Sinks.Many<ByteBuf> hotSource = Sinks.many().multicast().onBackpressureBuffer();
+    private final Sinks.Many<ByteBuf> hotSource =
+            Sinks.many().multicast().onBackpressureBuffer(Queues.SMALL_BUFFER_SIZE, false);
 
     @PostConstruct
     public void startPollingLoop() {
         pollingThread.execute(() -> {
             while (!Thread.interrupted()) {
                 try {
-                    var emitResult = hotSource.tryEmitNext(receiveNettyBuf());
+                    var packet = receiveNettyBuf();
+                    var emitResult = hotSource.tryEmitNext(packet);
+
+                    if (emitResult.isFailure()) {
+                        packet.release();
+                    }
+
                     if (emitResult.isFailure() && !emitResult.equals(Sinks.EmitResult.FAIL_OVERFLOW)) {
                         log.warn("Tun publisher emit failure: {}", emitResult.name());
                     }
@@ -68,24 +71,7 @@ public class TunPacketPublisher {
         hotSource.tryEmitComplete();
     }
 
-    public Flux<ByteBuf> subscribeSingle() {
+    public Flux<ByteBuf> subscribe() {
         return hotSource.asFlux();
-    }
-
-    public Flux<ByteBuf> subscribeBatch() {
-        return hotSource
-                .asFlux()
-                .bufferTimeout(
-                        packetBatchingProperties.getMaxBatchSize(), packetBatchingProperties.getMaxTimeInterval())
-                .flatMap(packets -> {
-                    log.debug(
-                            "Sent {} packets batch with total size {}",
-                            packets.size(),
-                            packets.stream().collect(Collectors.summarizingInt(ByteBuf::readableBytes)));
-
-                    return Mono.just(PooledByteBufAllocator.DEFAULT
-                            .compositeHeapBuffer(packets.size())
-                            .addComponents(true, packets));
-                });
     }
 }

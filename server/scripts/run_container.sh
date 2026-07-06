@@ -12,5 +12,8 @@ docker run -d \
   -e VPN_NET_LENGTH=16 \
   -e OUT_IFACE=eth0 \
   -e LOGGING_LEVEL=INFO \
+  -e POSTGRES_URL=jdbc:postgresql://last-bridge.site:5432/postgres \
+  -e POSTGRES_USER=test \
+  -e POSTGRES_PASSWORD=test \
   --name java-vpn-server \
   andrey820/java-vpn-server:latest

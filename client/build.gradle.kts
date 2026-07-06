@@ -30,10 +30,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-logging")
     implementation("org.springframework.boot:spring-boot-starter-webclient")
 
+    // Reactor Netty
     implementation("io.projectreactor.netty:reactor-netty-core")
-
-    implementation("org.pcap4j:pcap4j-core:1.8.2")
-    implementation("org.pcap4j:pcap4j-packetfactory-static:1.8.2")
+    implementation("io.projectreactor.netty:reactor-netty-quic:1.3.6")
 
     implementation(project(":common"))
 

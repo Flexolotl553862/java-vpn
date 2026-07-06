@@ -41,7 +41,7 @@ public class TunDeviceEchoMock implements TunDevice {
 
         try {
             var data = new byte[readableBytes];
-            packetBuffer.get(data, readerIndex, readableBytes);
+            packetBuffer.get(data, 0, readableBytes);
             packetQueue.add(MockUtils.revertPacket(Unpooled.wrappedBuffer(data)).getRawData());
             return readableBytes;
         } catch (Exception e) {

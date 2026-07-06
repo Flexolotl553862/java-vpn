@@ -1,3 +1,13 @@
+spring:
+  datasource:
+    url: ${POSTGRES_URL}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  liquibase:
+    change-log: classpath:db/changelog/changelog-master.yaml
+
 tun:
   mock: ${TUN_MOCK}
   address: ${VPN_NET}
