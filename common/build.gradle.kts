@@ -1,6 +1,7 @@
 plugins {
     java
     id("io.spring.dependency-management") version "1.1.7"
+    id("java-library")
 //    id("org.springframework.boot") version "4.1.0"
 }
 
@@ -24,9 +25,13 @@ repositories {
 }
 
 dependencies {
-
+    // Spring Boot
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-logging")
+
+    // Bouncy Castle
+    api("org.bouncycastle:bcprov-jdk18on:1.84")
+    api("org.bouncycastle:bcpkix-jdk18on:1.84")
 
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")

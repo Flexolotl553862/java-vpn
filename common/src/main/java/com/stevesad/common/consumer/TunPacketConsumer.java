@@ -29,14 +29,18 @@ public class TunPacketConsumer {
     public void startPollingLoop() {
         pollingThread.execute(() -> {
             while (!Thread.interrupted()) {
+                ByteBuf packet = null;
                 try {
-                    ByteBuf packet = packetQueue.take();
+                    packet = packetQueue.take();
                     sendNettyBuf(packet);
-                    packet.release();
                 } catch (IOException e) {
                     log.error(e.getMessage());
                 } catch (InterruptedException ignored) {
 
+                } finally {
+                    if (packet != null) {
+                        packet.release();
+                    }
                 }
             }
         });
@@ -53,11 +57,7 @@ public class TunPacketConsumer {
         pollingThread.shutdownNow();
     }
 
-    public void handleSingle(ByteBuf buf) {
-        packetQueue.add(buf);
-    }
-
-    public void handleBatch(ByteBuf batch) {
-        // TODO
+    public void handle(ByteBuf packet) {
+        packetQueue.add(packet);
     }
 }

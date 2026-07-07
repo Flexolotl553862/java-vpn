@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: test
+    password: test
+    driver-class-name: org.postgresql.Driver
+
+  liquibase:
+    change-log: classpath:db/changelog/changelog-master.yaml
+
+tun:
+  mock: echo
+  address: 10.2.1.1
+
+logging:
+  level:
+    com.stevesad: DEBUG
+    org.pcap4j: WARN

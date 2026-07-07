@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:latest
+    container_name: java-vpn-postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: vpn-server
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/java-vpn/data
+
+volumes:
+  postgres_data:

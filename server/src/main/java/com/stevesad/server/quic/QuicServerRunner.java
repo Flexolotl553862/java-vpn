@@ -1,4 +1,4 @@
-package com.stevesad.client.udp;
+package com.stevesad.server.quic;
 
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
@@ -6,24 +6,24 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 import reactor.netty.Connection;
-import reactor.netty.udp.UdpClient;
+import reactor.netty.quic.QuicServer;
 
 @Component
 @RequiredArgsConstructor
-public class UdpClientRunner implements ApplicationRunner {
+public class QuicServerRunner implements ApplicationRunner {
 
-    private final UdpClient udpClient;
+    private final QuicServer quicServer;
 
-    private Connection clientConnection;
+    private Connection serverConnection;
 
     @Override
     public void run(ApplicationArguments args) {
-        clientConnection = udpClient.connectNow();
-        clientConnection.onDispose().block();
+        serverConnection = quicServer.bindNow();
+        serverConnection.onDispose().block();
     }
 
     @PreDestroy
-    public void shutDown() {
-        clientConnection.disposeNow();
+    public void cleanup() {
+        serverConnection.disposeNow();
     }
 }

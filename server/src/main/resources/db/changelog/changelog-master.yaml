@@ -1,0 +1,129 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1
+      author: andrey.morozov
+      changes:
+        - createTable:
+            tableName: ca_certificate
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: cert_pem
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: private_key_pem
+                  type: text
+              - column:
+                  name: added_at
+                  type: timestamp
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: varchar(255)
+  - changeSet:
+      id: 2
+      author: andrey.morozov
+      changes:
+        - createTable:
+            tableName: client
+            columns:
+              - column:
+                  name: internal_address
+                  type: varchar(255)
+                  constraints:
+                    primaryKey: true
+                    unique: true
+                    nullable: false
+              - column:
+                  name: description
+                  type: varchar(255)
+  - changeSet:
+      id: 3
+      author: andrey.morozov
+      changes:
+        - createTable:
+            tableName: client_certificate
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: cert_pem
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: private_key_pem
+                  type: text
+              - column:
+                  name: added_at
+                  type: timestamp
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: client_address
+                  type: varchar(255)
+                  constraints:
+                    foreignKeyName: client_addr_fk
+                    references: client(internal_address)
+              - column:
+                  name: trusted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: varchar(255)
+  - changeSet:
+      id: 4
+      author: andrey.morozov
+      changes:
+        - createTable:
+            tableName: server_certificate
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: preferred
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: true
+              - column:
+                  name: cert_pem
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: private_key_pem
+                  type: text
+              - column:
+                  name: added_at
+                  type: timestamp
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: varchar(255)
