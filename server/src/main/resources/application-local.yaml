@@ -15,12 +15,4 @@ tun:
 logging:
   level:
     com.stevesad: DEBUG
-    reactor.netty.http.server: DEBUG
-    org.springframework.security: DEBUG
-#    io:
-#      netty:
-#        handler:
-#          ssl: DEBUG
-#    reactor:
-#      netty:
-#        quic: DEBUG
+    org.pcap4j: WARN

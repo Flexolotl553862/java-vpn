@@ -1,5 +1,5 @@
 tun:
-  mock: none
+  mock: ping
   address: 10.2.1.7
 
 vpn:
@@ -12,12 +12,5 @@ vpn:
 
 logging:
   level:
-    com:
-      stevesad: DEBUG
-#    io:
-#      netty:
-#        handler:
-#          ssl: DEBUG
-#    reactor:
-#      netty:
-#        quic: DEBUG
+    com.stevesad: INFO
+    org.pcap4j: WARN

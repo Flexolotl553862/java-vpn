@@ -12,12 +12,5 @@ vpn:
 
 logging:
   level:
-    com:
-      stevesad: DEBUG
-#    io:
-#      netty:
-#        handler:
-#          ssl: DEBUG
-#    reactor:
-#      netty:
-#        quic: DEBUG
+    com.stevesad: DEBUG
+    org.pcap4j: WARN
