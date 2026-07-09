@@ -43,8 +43,6 @@ dependencies {
     implementation("org.bouncycastle:bcprov-jdk18on:1.84")
     implementation("org.bouncycastle:bcpkix-jdk18on:1.84")
 
-    implementation("org.pcap4j:pcap4j-packetfactory-static:1.8.2")
-
     implementation(project(":common"))
 
     compileOnly("org.projectlombok:lombok")

@@ -2,6 +2,7 @@ package com.stevesad.common.publisher;
 
 import com.stevesad.common.tun.TunDevice;
 import com.stevesad.common.tun.TunDeviceProperties;
+import com.stevesad.common.utils.PacketUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import jakarta.annotation.PostConstruct;
@@ -14,7 +15,10 @@ import reactor.core.publisher.Sinks;
 import reactor.util.concurrent.Queues;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.nio.ByteBuffer;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -27,6 +31,7 @@ public class TunPacketPublisher {
     private final TunDeviceProperties tunDeviceProperties;
 
     private final ExecutorService pollingThread = Executors.newSingleThreadExecutor();
+    private final Map<InetAddress, Sinks.Many<ByteBuf>> sinkByAddress = new ConcurrentHashMap<>();
     private final Sinks.Many<ByteBuf> hotSource =
             Sinks.many().multicast().onBackpressureBuffer(Queues.SMALL_BUFFER_SIZE, false);
 
@@ -34,10 +39,23 @@ public class TunPacketPublisher {
     public void startPollingLoop() {
         pollingThread.execute(() -> {
             while (!Thread.interrupted()) {
-                try {
-                    var packet = receiveNettyBuf();
-                    var emitResult = hotSource.tryEmitNext(packet);
+                ByteBuf packet = null;
 
+                try {
+                    packet = receiveNettyBuf();
+                    var address = PacketUtils.extractIpV4DstAddress(packet);
+                    var sink = sinkByAddress.get(address);
+
+                    if (sink != null && sink.currentSubscriberCount() == 0) {
+                        sinkByAddress.remove(address, sink);
+                        sink = null;
+                    }
+
+                    if (sink == null) {
+                        sink = hotSource;
+                    }
+
+                    var emitResult = sink.tryEmitNext(packet);
                     if (emitResult.isFailure()) {
                         packet.release();
                     }
@@ -47,6 +65,9 @@ public class TunPacketPublisher {
                     }
                 } catch (IOException e) {
                     log.error(e.getMessage());
+                    if (packet != null) {
+                        packet.release();
+                    }
                 }
             }
         });
@@ -68,10 +89,16 @@ public class TunPacketPublisher {
     public void stopPollingLoop() {
         pollingThread.shutdown();
         pollingThread.shutdownNow();
-        hotSource.tryEmitComplete();
+        sinkByAddress.forEach((_, sink) -> sink.tryEmitComplete());
     }
 
-    public Flux<ByteBuf> subscribe() {
+    public Flux<ByteBuf> subscribeAll() {
         return hotSource.asFlux();
+    }
+
+    public Flux<ByteBuf> subscribeByAddress(InetAddress inetAddress) {
+        Sinks.Many<ByteBuf> sink = Sinks.many().unicast().onBackpressureBuffer();
+        sinkByAddress.put(inetAddress, sink);
+        return sink.asFlux();
     }
 }

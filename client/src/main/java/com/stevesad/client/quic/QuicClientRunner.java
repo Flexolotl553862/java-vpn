@@ -32,7 +32,7 @@ public class QuicClientRunner implements ApplicationRunner {
                 .createStream((in, out) -> {
                     var byteBufDecoder = new ByteBufStreamDecoder(tunPacketConsumer::handle);
 
-                    var fromTunFlux = out.send(tunPacketPublisher.subscribe());
+                    var fromTunFlux = out.send(tunPacketPublisher.subscribeAll());
 
                     var toTunFlux = in.receive().doOnNext(buf -> {
                         buf.retain();

@@ -27,7 +27,7 @@ public class TunDevicePingMock implements TunDevice {
     private final Map<Short, Instant> unhandledRequests = new ConcurrentHashMap<>();
     private final AtomicInteger counter = new AtomicInteger(1);
 
-    private static final Duration PING_DURATION = Duration.ofMillis(1000);
+    private static final Duration PING_DURATION = Duration.ofMillis(100);
 
     @Override
     public int receive(ByteBuffer readBuffer, int writerIndex) {
