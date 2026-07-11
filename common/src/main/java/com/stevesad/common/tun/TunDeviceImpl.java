@@ -1,5 +1,6 @@
 package com.stevesad.common.tun;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.scijava.nativelib.NativeLibraryUtil;
@@ -20,6 +21,20 @@ import java.util.Locale;
 public class TunDeviceImpl implements TunDevice {
 
     private final TunDeviceProperties properties;
+
+    @PostConstruct
+    public void autoStartup() throws IOException {
+        if (properties.isAutoStartup()) {
+            start();
+        }
+    }
+
+    @PreDestroy
+    public void autoShutdown() {
+        if (properties.isAutoStartup()) {
+            close();
+        }
+    }
 
     public void loadNativeLib() {
         Path resource = Paths.get(
@@ -46,10 +61,18 @@ public class TunDeviceImpl implements TunDevice {
         }
     }
 
-    public TunDeviceImpl(TunDeviceProperties properties) throws IOException {
+    public TunDeviceImpl(TunDeviceProperties properties) {
         this.properties = properties;
         loadNativeLib();
+    }
 
+    /**
+     * Direct usage is not recommended, use {@link TunDevice#start()} instead
+     */
+    public native int open(int address, int maskLength, int mtu) throws IOException;
+
+    @Override
+    public void start() throws IOException {
         String[] octets = properties.getAddress().getHostAddress().split("\\.");
         int convertedIp = 0;
 
@@ -58,13 +81,10 @@ public class TunDeviceImpl implements TunDevice {
         }
 
         open(convertedIp, properties.getMaskLength(), properties.getMtu());
-        log.info("Opened Tunnel on {}/{}", properties.getAddress().getHostAddress(), properties.getMaskLength());
+        log.info("Opened Tun device on {}/{}", properties.getAddress().getHostAddress(), properties.getMaskLength());
     }
 
-    public native int open(int address, int maskLength, int mtu) throws IOException;
-
     @Override
-    @PreDestroy
     public native void close();
 
     @Override

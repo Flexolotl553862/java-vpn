@@ -11,6 +11,7 @@ spring:
 tun:
   mock: echo
   address: 10.2.1.1
+  auto-startup: on
 
 logging:
   level:

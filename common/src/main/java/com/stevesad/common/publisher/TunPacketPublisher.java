@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
@@ -30,13 +31,31 @@ public class TunPacketPublisher {
     private final TunDevice tunDevice;
     private final TunDeviceProperties tunDeviceProperties;
 
-    private final ExecutorService pollingThread = Executors.newSingleThreadExecutor();
+    private ExecutorService pollingThread;
     private final Map<InetAddress, Sinks.Many<ByteBuf>> sinkByAddress = new ConcurrentHashMap<>();
     private final Sinks.Many<ByteBuf> hotSource =
             Sinks.many().multicast().onBackpressureBuffer(Queues.SMALL_BUFFER_SIZE, false);
 
     @PostConstruct
-    public void startPollingLoop() {
+    public void autoStartup() {
+        if (tunDeviceProperties.isAutoStartup()) {
+            startPollingLoop();
+        }
+    }
+
+    @PreDestroy
+    public void autoShutdown() {
+        if (tunDeviceProperties.isAutoStartup()) {
+            stopPollingLoop();
+        }
+    }
+
+    public synchronized void startPollingLoop() {
+        if (pollingThread != null && !pollingThread.isShutdown()) {
+            return;
+        }
+
+        pollingThread = Executors.newSingleThreadExecutor();
         pollingThread.execute(() -> {
             while (!Thread.interrupted()) {
                 ByteBuf packet = null;
@@ -85,11 +104,23 @@ public class TunPacketPublisher {
         return buf;
     }
 
-    @PreDestroy
-    public void stopPollingLoop() {
-        pollingThread.shutdown();
-        pollingThread.shutdownNow();
+    public synchronized void stopPollingLoop() {
+        if (pollingThread == null) {
+            return;
+        }
+
+        ExecutorService executor = pollingThread;
+        executor.shutdownNow();
+        try {
+            if (!executor.awaitTermination(2, TimeUnit.SECONDS)) {
+                log.warn("Tun publisher polling thread did not stop in time");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        pollingThread = null;
         sinkByAddress.forEach((_, sink) -> sink.tryEmitComplete());
+        sinkByAddress.clear();
     }
 
     public Flux<ByteBuf> subscribeAll() {

@@ -13,7 +13,9 @@ import java.net.Inet4Address;
 @ConfigurationProperties(prefix = "tun")
 public class TunDeviceProperties {
 
-    private Inet4Address address;
+    private boolean autoStartup = false;
+
+    private Inet4Address address = Inet4Address.ofLiteral("127.0.0.1");
 
     private int maskLength = 32;
 

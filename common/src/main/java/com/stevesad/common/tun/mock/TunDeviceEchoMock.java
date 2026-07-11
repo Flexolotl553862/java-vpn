@@ -2,6 +2,7 @@ package com.stevesad.common.tun.mock;
 
 import com.stevesad.common.tun.TunDevice;
 import io.netty.buffer.Unpooled;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -10,6 +11,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+@Slf4j
 @Component
 @ConditionalOnProperty(name = "tun.mock", havingValue = "echo")
 public class TunDeviceEchoMock implements TunDevice {
@@ -17,6 +19,12 @@ public class TunDeviceEchoMock implements TunDevice {
     private final BlockingQueue<byte[]> packetQueue = new LinkedBlockingQueue<>();
 
     private volatile boolean closed = false;
+
+    @Override
+    public void start() {
+        closed = false;
+        log.info("Opened Tun device with mock mode: ECHO");
+    }
 
     @Override
     public int receive(ByteBuffer readBuffer, int writerIndex) throws IOException {
@@ -29,6 +37,7 @@ public class TunDeviceEchoMock implements TunDevice {
             readBuffer.put(writerIndex, packet);
             return packet.length;
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw new IOException("Packet reading from Tun was interrupted", e);
         }
     }

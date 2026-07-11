@@ -1,0 +1,10 @@
+tun:
+  mock: ping
+
+ui:
+  enabled: true
+
+logging:
+  level:
+    com.stevesad: DEBUG
+    org.pcap4j: WARN

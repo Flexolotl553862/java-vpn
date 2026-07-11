@@ -1,7 +1,9 @@
 plugins {
     java
+    application
     id("io.spring.dependency-management") version "1.1.7"
     id("org.springframework.boot") version "4.1.0"
+    id("org.openjfx.javafxplugin") version "0.1.0"
 }
 
 group = "com.stevesad"
@@ -15,6 +17,19 @@ configurations {
 
 repositories {
     mavenCentral()
+}
+
+springBoot {
+    mainClass.set("com.stevesad.client.ClientApplication")
+}
+
+application {
+    mainClass.set("com.stevesad.client.ui.ClientUiApplication")
+}
+
+javafx {
+    version = "23.0.2"
+    modules = listOf("javafx.controls")
 }
 
 dependencyManagement {
@@ -45,4 +60,10 @@ dependencies {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+tasks.register("runClientUi") {
+    group = "application"
+    description = "Runs the JavaFX client UI prototype."
+    dependsOn(tasks.named("run"))
 }

@@ -1,16 +1,20 @@
+spring:
+  main:
+    web-application-type: none
+
 tun:
-  mock: ping
+  mock: none
   address: 10.2.1.7
 
 vpn:
   server:
-    remote-address: 127.0.0.1
-    remote-port: 8083
+    remote-address: 185.10.19.139
+    remote-port: 18083
   client:
     certificate-path: /Users/andrey/java-vpn/certs/client_cert.pem
     private-key-path: /Users/andrey/java-vpn/certs/client_key.pem
 
 logging:
   level:
-    com.stevesad: DEBUG
+    com.stevesad: INFO
     org.pcap4j: WARN
