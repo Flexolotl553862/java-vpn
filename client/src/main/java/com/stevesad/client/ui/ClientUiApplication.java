@@ -3,6 +3,9 @@ package com.stevesad.client.ui;
 import com.stevesad.client.ClientApplication;
 import com.stevesad.client.connection.VpnConnectionFactory;
 import com.stevesad.client.storage.VpnProfileService;
+import com.stevesad.common.consumer.TunPacketConsumer;
+import com.stevesad.common.publisher.TunPacketPublisher;
+import com.stevesad.common.tun.TunDevice;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Scene;
@@ -25,7 +28,11 @@ public class ClientUiApplication extends Application {
         VpnProfileService vpnProfileService = applicationContext.getBean(VpnProfileService.class);
         VpnConnectionFactory vpnConnectionFactory = applicationContext.getBean(VpnConnectionFactory.class);
 
-        mainView = new ClientMainView(stage, vpnProfileService, vpnConnectionFactory);
+        TunPacketPublisher tunPacketPublisher = applicationContext.getBean(TunPacketPublisher.class);
+        TunPacketConsumer tunPacketConsumer = applicationContext.getBean(TunPacketConsumer.class);
+        TunDevice tunDevice = applicationContext.getBean(TunDevice.class);
+
+        mainView = new ClientMainView(stage, vpnProfileService, vpnConnectionFactory, tunPacketPublisher, tunPacketConsumer, tunDevice);
         Scene scene = new Scene(mainView.getRoot(), 900, 560);
 
         stage.setTitle("java-vpn Client");
@@ -40,7 +47,7 @@ public class ClientUiApplication extends Application {
     @Override
     public void stop() {
         if (mainView != null) {
-            mainView.close();
+            mainView.closeCurrentConnection();
         }
         if (applicationContext != null) {
             applicationContext.close();

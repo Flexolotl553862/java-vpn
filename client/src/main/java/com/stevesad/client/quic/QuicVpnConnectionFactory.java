@@ -7,7 +7,6 @@ import com.stevesad.client.storage.VpnProfile;
 import com.stevesad.common.consumer.ByteBufStreamDecoder;
 import com.stevesad.common.consumer.TunPacketConsumer;
 import com.stevesad.common.publisher.TunPacketPublisher;
-import com.stevesad.common.tun.TunDevice;
 import com.stevesad.common.tun.TunDeviceProperties;
 import com.stevesad.common.utils.CertificateUtils;
 import io.netty.handler.codec.quic.QuicSslContext;
@@ -29,7 +28,6 @@ import java.security.cert.X509Certificate;
 @RequiredArgsConstructor
 public class QuicVpnConnectionFactory implements VpnConnectionFactory {
 
-    private final TunDevice tunDevice;
     private final QuicProperties quicProperties;
     private final TunDeviceProperties tunDeviceProperties;
     private final TunPacketPublisher tunPacketPublisher;
@@ -65,22 +63,17 @@ public class QuicVpnConnectionFactory implements VpnConnectionFactory {
         X509Certificate cert = CertificateUtils.parseCertificate(Files.readString(profile.getCertificatePath()));
         tunDeviceProperties.setAddress(Inet4Address.ofLiteral(CertificateUtils.extractCN(cert)));
 
-        return new QuicVpnConnection(
-                client,
-                (in, out) -> {
-                    var byteBufDecoder = new ByteBufStreamDecoder(tunPacketConsumer::handle);
+        return new QuicVpnConnection(client, (in, out) -> {
+            var byteBufDecoder = new ByteBufStreamDecoder(tunPacketConsumer::handle);
 
-                    var fromTunFlux = out.send(tunPacketPublisher.subscribeAll());
+            var fromTunFlux = out.send(tunPacketPublisher.subscribeAll());
 
-                    var toTunFlux = in.receive().doOnNext(buf -> {
-                        buf.retain();
-                        byteBufDecoder.handle(buf);
-                    });
+            var toTunFlux = in.receive().doOnNext(buf -> {
+                buf.retain();
+                byteBufDecoder.handle(buf);
+            });
 
-                    return Mono.when(fromTunFlux, toTunFlux);
-                },
-                tunDevice,
-                tunPacketPublisher,
-                tunPacketConsumer);
+            return Mono.when(fromTunFlux, toTunFlux);
+        });
     }
 }

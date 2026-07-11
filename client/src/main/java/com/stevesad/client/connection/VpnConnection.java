@@ -4,5 +4,5 @@ public interface VpnConnection {
 
     void blockUntilClose();
 
-    void close() throws Exception;
+    void close();
 }

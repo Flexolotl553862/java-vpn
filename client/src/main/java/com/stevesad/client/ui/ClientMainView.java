@@ -4,6 +4,9 @@ import com.stevesad.client.connection.VpnConnection;
 import com.stevesad.client.connection.VpnConnectionFactory;
 import com.stevesad.client.storage.VpnProfile;
 import com.stevesad.client.storage.VpnProfileService;
+import com.stevesad.common.consumer.TunPacketConsumer;
+import com.stevesad.common.publisher.TunPacketPublisher;
+import com.stevesad.common.tun.TunDevice;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -18,8 +21,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @Slf4j
 final class ClientMainView {
@@ -62,17 +63,26 @@ final class ClientMainView {
 
     private final VpnProfileService vpnProfileService;
     private final VpnConnectionFactory vpnConnectionFactory;
-    private final ExecutorService connectionExecutor = Executors.newSingleThreadExecutor();
+    private final TunPacketPublisher tunPacketPublisher;
+    private final TunPacketConsumer tunPacketConsumer;
+    private final TunDevice tunDevice;
 
     private VpnConnection currentConnection;
-    private long connectionGeneration = 0;
-    private boolean closed = false;
     private VpnConnectionState connectionState = VpnConnectionState.DISCONNECTED;
 
-    ClientMainView(Window owner, VpnProfileService vpnProfileService, VpnConnectionFactory vpnConnectionFactory) {
+    ClientMainView(
+            Window owner,
+            VpnProfileService vpnProfileService,
+            VpnConnectionFactory vpnConnectionFactory,
+            TunPacketPublisher tunPacketPublisher,
+            TunPacketConsumer tunPacketConsumer,
+            TunDevice tunDevice) {
         this.owner = owner;
         this.vpnProfileService = vpnProfileService;
         this.vpnConnectionFactory = vpnConnectionFactory;
+        this.tunPacketPublisher = tunPacketPublisher;
+        this.tunPacketConsumer = tunPacketConsumer;
+        this.tunDevice = tunDevice;
         configureRoot();
     }
 
@@ -299,7 +309,7 @@ final class ClientMainView {
         serverPortField.setText(String.valueOf(profile.getServerPort()));
         certificatePathField.setText(profile.getCertificatePath().toString());
         privateKeyPathField.setText(profile.getPrivateKeyPath().toString());
-        routesArea.setText(String.join("\n", profile.getRoutes()));
+        routesArea.setText(String.join(System.lineSeparator(), profile.getRoutes()));
         connectButton.setDisable(false);
         updateControlsForConnectionState(VpnConnectionState.DISCONNECTED);
     }
@@ -332,54 +342,31 @@ final class ClientMainView {
     private void connectSelectedProfile(VpnProfile selected) {
         setConnectionState(VpnConnectionState.CONNECTING);
         connectButton.setDisable(true);
-        long generation = ++connectionGeneration;
 
-        connectionExecutor.execute(() -> {
-            try {
-                VpnConnection connection = vpnConnectionFactory.openConnection(selected);
-                javafx.application.Platform.runLater(() -> {
-                    if (closed || generation != connectionGeneration) {
-                        closeQuietly(connection);
-                        return;
-                    }
-                    currentConnection = connection;
-                    connectButton.setDisable(false);
-                    setConnectionState(VpnConnectionState.CONNECTED);
-                });
-            } catch (Exception e) {
-                javafx.application.Platform.runLater(() -> {
-                    if (closed || generation != connectionGeneration) {
-                        return;
-                    }
-                    connectButton.setDisable(false);
-                    setConnectionState(VpnConnectionState.DISCONNECTED);
-                    showError("Failed to connect to server", e);
-                });
+        try {
+            if (currentConnection != null) {
+                closeCurrentConnection();
             }
-        });
+
+            tunDevice.start();
+            tunPacketPublisher.startPollingLoop();
+            tunPacketConsumer.startPollingLoop();
+            currentConnection = vpnConnectionFactory.openConnection(selected);
+
+            connectButton.setDisable(false);
+            setConnectionState(VpnConnectionState.CONNECTED);
+        } catch (Exception e) {
+            connectButton.setDisable(false);
+            setConnectionState(VpnConnectionState.DISCONNECTED);
+            showError("Failed to connect to server", e);
+        }
     }
 
     private void disconnectCurrentProfile() {
-        VpnConnection connection = currentConnection;
-        currentConnection = null;
-        connectionGeneration++;
         connectButton.setDisable(true);
-
-        connectionExecutor.execute(() -> {
-            try {
-                connection.close();
-                javafx.application.Platform.runLater(() -> {
-                    connectButton.setDisable(false);
-                    setConnectionState(VpnConnectionState.DISCONNECTED);
-                });
-            } catch (Exception e) {
-                javafx.application.Platform.runLater(() -> {
-                    connectButton.setDisable(false);
-                    setConnectionState(VpnConnectionState.DISCONNECTED);
-                    showError("Failed to disconnect from server", e);
-                });
-            }
-        });
+        closeCurrentConnection();
+        connectButton.setDisable(false);
+        setConnectionState(VpnConnectionState.DISCONNECTED);
     }
 
     private void setConnectionState(VpnConnectionState state) {
@@ -429,8 +416,7 @@ final class ClientMainView {
                 || serverPortField.getText().isBlank()
                 || !isServerPortValid()
                 || certificatePathField.getText().isBlank()
-                || privateKeyPathField.getText().isBlank()
-                || getRoutes().isEmpty();
+                || privateKeyPathField.getText().isBlank();
     }
 
     private boolean isServerPortValid() {
@@ -471,24 +457,19 @@ final class ClientMainView {
         alert.showAndWait();
     }
 
-    void close() {
-        closed = true;
-        connectionGeneration++;
-        VpnConnection connection = currentConnection;
-        currentConnection = null;
-
-        if (connection != null) {
-            closeQuietly(connection);
+    void closeCurrentConnection() {
+        if (currentConnection == null) {
+            return;
         }
 
-        connectionExecutor.shutdownNow();
-    }
-
-    private void closeQuietly(VpnConnection connection) {
         try {
-            connection.close();
+            currentConnection.close();
+            tunPacketPublisher.stopPollingLoop();
+            tunPacketConsumer.stopPollingLoop();
+            setConnectionState(VpnConnectionState.DISCONNECTED);
+            currentConnection = null;
         } catch (Exception e) {
-            log.error("Failed to close VPN connection", e);
+            showError("Failed to close connection", e);
         }
     }
 }

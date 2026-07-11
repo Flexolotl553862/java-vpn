@@ -3,6 +3,7 @@ package com.stevesad.client.storage;
 import lombok.*;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -12,7 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 public class VpnProfile {
 
-    private  String name;
+    private String name;
 
     private String serverHost;
 
@@ -22,7 +23,7 @@ public class VpnProfile {
 
     private Path privateKeyPath;
 
-    private List<String> routes;
+    private List<String> routes = new ArrayList<>(List.of("127.0.0.1/1", "128.0.0.1/1"));
 
     @Override
     public String toString() {
