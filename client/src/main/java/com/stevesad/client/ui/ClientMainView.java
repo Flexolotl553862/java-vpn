@@ -3,7 +3,7 @@ package com.stevesad.client.ui;
 import com.stevesad.client.connection.VpnConnection;
 import com.stevesad.client.connection.VpnConnectionFactory;
 import com.stevesad.client.storage.VpnProfile;
-import com.stevesad.client.storage.VpnProfileService;
+import com.stevesad.client.storage.LocalStorage;
 import com.stevesad.common.consumer.TunPacketConsumer;
 import com.stevesad.common.publisher.TunPacketPublisher;
 import com.stevesad.common.tun.TunDevice;
@@ -33,6 +33,7 @@ final class ClientMainView {
     private final Window owner;
     private final BorderPane root = new BorderPane();
     private final ObservableList<VpnProfile> profiles = FXCollections.observableArrayList();
+    private final ObservableList<Path> trustedCertificates = FXCollections.observableArrayList();
     private final ListView<VpnProfile> profileList = new ListView<>(profiles);
     private final TextField profileNameField = new TextField();
     private final TextField serverHostField = new TextField();
@@ -46,6 +47,7 @@ final class ClientMainView {
     private final Button newButton = new Button("New");
     private final Button saveButton = new Button("Save configuration");
     private final Button deleteButton = new Button("Delete");
+    private final Button settingsButton = new Button("⚙");
     private final Button connectButton = new Button("Connect");
     private final List<Control> profileControls = List.of(
             profileList,
@@ -59,9 +61,10 @@ final class ClientMainView {
             choosePrivateKeyButton,
             newButton,
             saveButton,
-            deleteButton);
+            deleteButton,
+            settingsButton);
 
-    private final VpnProfileService vpnProfileService;
+    private final LocalStorage localStorage;
     private final VpnConnectionFactory vpnConnectionFactory;
     private final TunPacketPublisher tunPacketPublisher;
     private final TunPacketConsumer tunPacketConsumer;
@@ -72,13 +75,13 @@ final class ClientMainView {
 
     ClientMainView(
             Window owner,
-            VpnProfileService vpnProfileService,
+            LocalStorage localStorage,
             VpnConnectionFactory vpnConnectionFactory,
             TunPacketPublisher tunPacketPublisher,
             TunPacketConsumer tunPacketConsumer,
             TunDevice tunDevice) {
         this.owner = owner;
-        this.vpnProfileService = vpnProfileService;
+        this.localStorage = localStorage;
         this.vpnConnectionFactory = vpnConnectionFactory;
         this.tunPacketPublisher = tunPacketPublisher;
         this.tunPacketConsumer = tunPacketConsumer;
@@ -128,6 +131,15 @@ final class ClientMainView {
     private Parent createMainPanel() {
         Label title = new Label("Connection Profile");
         title.setStyle("-fx-font-size: 22px; -fx-font-weight: 700;");
+        settingsButton.setOnAction(_ -> openSettingsWindow());
+        settingsButton.setText("Trust store settings");
+        settingsButton.setMinWidth(36);
+        settingsButton.setMinHeight(32);
+
+        Region titleSpacer = new Region();
+        HBox.setHgrow(titleSpacer, Priority.ALWAYS);
+        HBox header = new HBox(12, title, titleSpacer, settingsButton);
+        header.setAlignment(Pos.CENTER_LEFT);
 
         Label subtitle = new Label("Certificate and private key are stored as a named connection draft.");
         subtitle.setStyle("-fx-text-fill: #5d6673;");
@@ -173,7 +185,7 @@ final class ClientMainView {
         status.setAlignment(Pos.CENTER_LEFT);
         connectionStatusLabel.setStyle("-fx-font-weight: 700;");
 
-        VBox panel = new VBox(16, title, subtitle, new Separator(), form, actions, status);
+        VBox panel = new VBox(16, header, subtitle, new Separator(), form, actions, status);
         panel.setPadding(new Insets(28));
         panel.setAlignment(Pos.TOP_LEFT);
         return panel;
@@ -254,9 +266,9 @@ final class ClientMainView {
                 getRoutes());
 
         try {
-            vpnProfileService.store(profile);
+            localStorage.storeProfile(profile);
             if (selectedProfile != null && !selectedProfile.getName().equals(profile.getName())) {
-                vpnProfileService.delete(selectedProfile);
+                localStorage.deleteProfile(selectedProfile);
             }
         } catch (Exception e) {
             showError("Failed to save configuration", e);
@@ -281,7 +293,7 @@ final class ClientMainView {
         }
 
         try {
-            vpnProfileService.delete(selected);
+            localStorage.deleteProfile(selected);
             profiles.remove(selected);
             clearProfileForm();
         } catch (Exception e) {
@@ -430,7 +442,7 @@ final class ClientMainView {
 
     void loadProfiles() {
         try {
-            profiles.setAll(vpnProfileService.loadAll());
+            profiles.setAll(localStorage.loadAllProfiles());
         } catch (Exception e) {
             showError("Exception while loading existing profiles", e);
         }
@@ -455,6 +467,10 @@ final class ClientMainView {
         alert.setHeaderText(title);
         alert.setContentText(e.getClass() + ": " + e.getMessage());
         alert.showAndWait();
+    }
+
+    private void openSettingsWindow() {
+        new TrustedCertificatesWindow(owner, trustedCertificates).show();
     }
 
     void closeCurrentConnection() {

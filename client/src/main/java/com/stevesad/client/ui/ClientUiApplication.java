@@ -2,7 +2,7 @@ package com.stevesad.client.ui;
 
 import com.stevesad.client.ClientApplication;
 import com.stevesad.client.connection.VpnConnectionFactory;
-import com.stevesad.client.storage.VpnProfileService;
+import com.stevesad.client.storage.LocalStorage;
 import com.stevesad.common.consumer.TunPacketConsumer;
 import com.stevesad.common.publisher.TunPacketPublisher;
 import com.stevesad.common.tun.TunDevice;
@@ -25,14 +25,14 @@ public class ClientUiApplication extends Application {
 
     @Override
     public void start(Stage stage) {
-        VpnProfileService vpnProfileService = applicationContext.getBean(VpnProfileService.class);
+        LocalStorage localStorage = applicationContext.getBean(LocalStorage.class);
         VpnConnectionFactory vpnConnectionFactory = applicationContext.getBean(VpnConnectionFactory.class);
 
         TunPacketPublisher tunPacketPublisher = applicationContext.getBean(TunPacketPublisher.class);
         TunPacketConsumer tunPacketConsumer = applicationContext.getBean(TunPacketConsumer.class);
         TunDevice tunDevice = applicationContext.getBean(TunDevice.class);
 
-        mainView = new ClientMainView(stage, vpnProfileService, vpnConnectionFactory, tunPacketPublisher, tunPacketConsumer, tunDevice);
+        mainView = new ClientMainView(stage, localStorage, vpnConnectionFactory, tunPacketPublisher, tunPacketConsumer, tunDevice);
         Scene scene = new Scene(mainView.getRoot(), 900, 560);
 
         stage.setTitle("java-vpn Client");

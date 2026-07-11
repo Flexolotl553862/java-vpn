@@ -11,14 +11,16 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class VpnProfileServiceImpl implements VpnProfileService {
+public class LocalStorageImpl implements LocalStorage {
 
     private static final Path ROOT_PATH;
     private static final String PROFILE_FILE = "settings.json";
+    private static final String TRUST_DIRECTORY = "trusted";
 
     private final ObjectMapper objectMapper;
 
@@ -33,7 +35,7 @@ public class VpnProfileServiceImpl implements VpnProfileService {
     }
 
     @Override
-    public void store(VpnProfile profile) throws Exception {
+    public void storeProfile(VpnProfile profile) throws Exception {
         Path profileDir = ROOT_PATH.resolve(profile.getName());
         Files.createDirectories(profileDir);
 
@@ -58,18 +60,12 @@ public class VpnProfileServiceImpl implements VpnProfileService {
     }
 
     @Override
-    public void delete(VpnProfile vpnProfile) throws Exception {
+    public void deleteProfile(VpnProfile vpnProfile) throws Exception {
         FileSystemUtils.deleteRecursively(ROOT_PATH.resolve(vpnProfile.getName()));
     }
 
     @Override
-    public VpnProfile loadProfileByName(String name) {
-        Path profilePath = ROOT_PATH.resolve(name).resolve(PROFILE_FILE);
-        return objectMapper.readValue(profilePath, VpnProfile.class);
-    }
-
-    @Override
-    public List<VpnProfile> loadAll() {
+    public List<VpnProfile> loadAllProfiles() {
         File[] profileDirs = ROOT_PATH.toFile().listFiles();
         if (profileDirs == null) {
             profileDirs = new File[0];
@@ -83,5 +79,26 @@ public class VpnProfileServiceImpl implements VpnProfileService {
             }
         }
         return profiles;
+    }
+
+    @Override
+    public void storeTrustCert(Path cert) throws Exception {
+        Path trustDir = ROOT_PATH.resolve(TRUST_DIRECTORY);
+        Files.createDirectories(trustDir);
+        Files.copy(cert, trustDir.resolve(cert.getFileName()));
+    }
+
+    @Override
+    public void deleteTrustCert(Path cert) throws Exception {
+        Files.delete(cert);
+    }
+
+    @Override
+    public List<Path> loadAllTrustCerts() {
+        File[] certs = ROOT_PATH.resolve(TRUST_DIRECTORY).toFile().listFiles();
+        if (certs == null) {
+            certs = new File[0];
+        }
+        return Arrays.stream(certs).map(File::toPath).toList();
     }
 }
