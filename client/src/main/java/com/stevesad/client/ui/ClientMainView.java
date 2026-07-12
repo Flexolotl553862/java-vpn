@@ -1,12 +1,8 @@
 package com.stevesad.client.ui;
 
-import com.stevesad.client.connection.VpnConnection;
-import com.stevesad.client.connection.VpnConnectionFactory;
+import com.stevesad.client.launcher.ClientLauncher;
 import com.stevesad.client.storage.VpnProfile;
 import com.stevesad.client.storage.LocalStorage;
-import com.stevesad.common.consumer.TunPacketConsumer;
-import com.stevesad.common.publisher.TunPacketPublisher;
-import com.stevesad.common.tun.TunDevice;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -65,27 +61,17 @@ final class ClientMainView {
             settingsButton);
 
     private final LocalStorage localStorage;
-    private final VpnConnectionFactory vpnConnectionFactory;
-    private final TunPacketPublisher tunPacketPublisher;
-    private final TunPacketConsumer tunPacketConsumer;
-    private final TunDevice tunDevice;
+    private final ClientLauncher clientLauncher;
 
-    private VpnConnection currentConnection;
     private VpnConnectionState connectionState = VpnConnectionState.DISCONNECTED;
 
     ClientMainView(
             Window owner,
             LocalStorage localStorage,
-            VpnConnectionFactory vpnConnectionFactory,
-            TunPacketPublisher tunPacketPublisher,
-            TunPacketConsumer tunPacketConsumer,
-            TunDevice tunDevice) {
+            ClientLauncher clientLauncher) {
         this.owner = owner;
         this.localStorage = localStorage;
-        this.vpnConnectionFactory = vpnConnectionFactory;
-        this.tunPacketPublisher = tunPacketPublisher;
-        this.tunPacketConsumer = tunPacketConsumer;
-        this.tunDevice = tunDevice;
+        this.clientLauncher = clientLauncher;
         configureRoot();
     }
 
@@ -338,7 +324,7 @@ final class ClientMainView {
     }
 
     private void toggleConnection() {
-        if (currentConnection != null) {
+        if (connectionState == VpnConnectionState.CONNECTED) {
             disconnectCurrentProfile();
             return;
         }
@@ -356,14 +342,7 @@ final class ClientMainView {
         connectButton.setDisable(true);
 
         try {
-            if (currentConnection != null) {
-                closeCurrentConnection();
-            }
-
-            tunDevice.start();
-            tunPacketPublisher.startPollingLoop();
-            tunPacketConsumer.startPollingLoop();
-            currentConnection = vpnConnectionFactory.openConnection(selected);
+            clientLauncher.start(selected);
 
             connectButton.setDisable(false);
             setConnectionState(VpnConnectionState.CONNECTED);
@@ -376,9 +355,14 @@ final class ClientMainView {
 
     private void disconnectCurrentProfile() {
         connectButton.setDisable(true);
-        closeCurrentConnection();
-        connectButton.setDisable(false);
-        setConnectionState(VpnConnectionState.DISCONNECTED);
+        try {
+            clientLauncher.stop();
+            setConnectionState(VpnConnectionState.DISCONNECTED);
+        } catch (Exception e) {
+            showError("Failed to disconnect from server", e);
+        } finally {
+            connectButton.setDisable(false);
+        }
     }
 
     private void setConnectionState(VpnConnectionState state) {
@@ -470,22 +454,27 @@ final class ClientMainView {
     }
 
     private void openSettingsWindow() {
-        new TrustedCertificatesWindow(owner, trustedCertificates).show();
+        new TrustedCertificatesWindow(owner, trustedCertificates, localStorage).show();
     }
 
     void closeCurrentConnection() {
-        if (currentConnection == null) {
+        if (connectionState == VpnConnectionState.DISCONNECTED) {
             return;
         }
 
         try {
-            currentConnection.close();
-            tunPacketPublisher.stopPollingLoop();
-            tunPacketConsumer.stopPollingLoop();
+            clientLauncher.stop();
             setConnectionState(VpnConnectionState.DISCONNECTED);
-            currentConnection = null;
         } catch (Exception e) {
             showError("Failed to close connection", e);
+        }
+    }
+
+    void loadTrustCerts() {
+        try {
+            trustedCertificates.setAll(localStorage.loadAllTrustedCerts());
+        } catch (Exception e) {
+            showError("Exception while loading trusted certificates", e);
         }
     }
 }

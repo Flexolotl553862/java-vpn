@@ -82,19 +82,19 @@ public class LocalStorageImpl implements LocalStorage {
     }
 
     @Override
-    public void storeTrustCert(Path cert) throws Exception {
+    public Path storeTrustedCert(Path cert) throws Exception {
         Path trustDir = ROOT_PATH.resolve(TRUST_DIRECTORY);
         Files.createDirectories(trustDir);
-        Files.copy(cert, trustDir.resolve(cert.getFileName()));
+        return Files.copy(cert, trustDir.resolve(cert.getFileName()));
     }
 
     @Override
-    public void deleteTrustCert(Path cert) throws Exception {
+    public void deleteTrustedCert(Path cert) throws Exception {
         Files.delete(cert);
     }
 
     @Override
-    public List<Path> loadAllTrustCerts() {
+    public List<Path> loadAllTrustedCerts() {
         File[] certs = ROOT_PATH.resolve(TRUST_DIRECTORY).toFile().listFiles();
         if (certs == null) {
             certs = new File[0];

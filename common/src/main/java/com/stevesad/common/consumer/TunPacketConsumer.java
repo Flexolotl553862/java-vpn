@@ -1,21 +1,14 @@
 package com.stevesad.common.consumer;
 
 import com.stevesad.common.tun.TunDevice;
-import com.stevesad.common.tun.TunDeviceProperties;
 import io.netty.buffer.ByteBuf;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 @Slf4j
 @Component
@@ -23,24 +16,9 @@ import java.util.concurrent.TimeUnit;
 public class TunPacketConsumer {
 
     private final TunDevice tunDevice;
-    private final TunDeviceProperties tunDeviceProperties;
 
     private final BlockingQueue<ByteBuf> packetQueue = new LinkedBlockingQueue<>();
     private ExecutorService pollingThread;
-
-    @PostConstruct
-    public void autoStartup() {
-        if (tunDeviceProperties.isAutoStartup()) {
-            startPollingLoop();
-        }
-    }
-
-    @PreDestroy
-    public void autoShutdown() {
-        if (tunDeviceProperties.isAutoStartup()) {
-            stopPollingLoop();
-        }
-    }
 
     public synchronized void startPollingLoop() {
         if (pollingThread != null && !pollingThread.isShutdown()) {
@@ -79,13 +57,18 @@ public class TunPacketConsumer {
 
         ExecutorService executor = pollingThread;
         executor.shutdownNow();
-        try {
-            if (!executor.awaitTermination(2, TimeUnit.SECONDS)) {
-                log.warn("Tun consumer polling thread did not stop in time");
+
+        while (true) {
+            try {
+                if (!executor.awaitTermination(2, TimeUnit.SECONDS)) {
+                    log.warn("Tun consumer polling thread did not stop in time");
+                }
+                break;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
         }
+
         pollingThread = null;
         releaseQueuedPackets();
     }

@@ -1,7 +1,5 @@
 package com.stevesad.common.tun;
 
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.scijava.nativelib.NativeLibraryUtil;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -21,20 +19,6 @@ import java.util.Locale;
 public class TunDeviceImpl implements TunDevice {
 
     private final TunDeviceProperties properties;
-
-    @PostConstruct
-    public void autoStartup() throws IOException {
-        if (properties.isAutoStartup()) {
-            start();
-        }
-    }
-
-    @PreDestroy
-    public void autoShutdown() {
-        if (properties.isAutoStartup()) {
-            close();
-        }
-    }
 
     public void loadNativeLib() {
         Path resource = Paths.get(
@@ -67,21 +51,21 @@ public class TunDeviceImpl implements TunDevice {
     }
 
     /**
-     * Direct usage is not recommended, use {@link TunDevice#start()} instead
+     * Direct usage is not recommended, use {@link TunDevice#start(String, int, int)} instead
      */
     public native int open(int address, int maskLength, int mtu) throws IOException;
 
     @Override
-    public void start() throws IOException {
-        String[] octets = properties.getAddress().getHostAddress().split("\\.");
+    public void start(String address, int maskLength, int mtu) throws IOException {
+        String[] octets = address.split("\\.");
         int convertedIp = 0;
 
         for (String octet : octets) {
             convertedIp = (convertedIp << 8) | Integer.parseInt(octet);
         }
 
-        open(convertedIp, properties.getMaskLength(), properties.getMtu());
-        log.info("Opened Tun device on {}/{}", properties.getAddress().getHostAddress(), properties.getMaskLength());
+        open(convertedIp, maskLength, mtu);
+        log.info("Opened Tun device on {}/{}", address, maskLength);
     }
 
     @Override

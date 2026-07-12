@@ -1,5 +1,6 @@
 package com.stevesad.client.ui;
 
+import com.stevesad.client.storage.LocalStorage;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -28,15 +29,17 @@ final class TrustedCertificatesWindow {
 
     private final Window owner;
     private final ObservableList<Path> certificates;
+    private final LocalStorage localStorage;
     private final Stage stage = new Stage();
     private final ListView<Path> certificateList;
     private final TextField certificatePathField = new TextField();
     private final Button addButton = new Button("Add certificate");
     private final Button deleteButton = new Button("Delete certificate");
 
-    TrustedCertificatesWindow(Window owner, ObservableList<Path> certificates) {
+    TrustedCertificatesWindow(Window owner, ObservableList<Path> certificates, LocalStorage localStorage) {
         this.owner = owner;
         this.certificates = certificates;
+        this.localStorage = localStorage;
         this.certificateList = new ListView<>(certificates);
         configureStage();
     }
@@ -133,8 +136,13 @@ final class TrustedCertificatesWindow {
 
     private void addCertificate() {
         Path certificate = Path.of(certificatePathField.getText());
-        certificates.add(certificate);
-        clearForm();
+        try {
+            Path storedCertificate = localStorage.storeTrustedCert(certificate);
+            certificates.add(storedCertificate);
+            clearForm();
+        } catch (Exception e) {
+            showError("Failed to add trusted certificate", e);
+        }
     }
 
     private void deleteCertificate() {
@@ -143,8 +151,13 @@ final class TrustedCertificatesWindow {
             return;
         }
 
-        certificates.remove(selected);
-        clearForm();
+        try {
+            localStorage.deleteTrustedCert(selected);
+            certificates.remove(selected);
+            clearForm();
+        } catch (Exception e) {
+            showError("Failed to delete trusted certificate", e);
+        }
     }
 
     private boolean confirmCertificateDeletion(Path certificate) {
@@ -174,5 +187,14 @@ final class TrustedCertificatesWindow {
     private void updateButtonState() {
         addButton.setDisable(certificatePathField.getText().isBlank());
         deleteButton.setDisable(certificateList.getSelectionModel().getSelectedItem() == null);
+    }
+
+    private void showError(String title, Exception e) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.initOwner(stage);
+        alert.setTitle(title);
+        alert.setHeaderText(title);
+        alert.setContentText(e.getClass() + ": " + e.getMessage());
+        alert.showAndWait();
     }
 }

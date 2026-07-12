@@ -10,9 +10,10 @@ spring:
 
 tun:
   mock: ${TUN_MOCK}
-  address: ${VPN_NET}
-  mask-length: ${VPN_NET_LENGTH}
-  auto-startup: on
+  auto:
+    enabled: true
+    address: ${VPN_NET}
+    mask-length: ${VPN_NET_LENGTH}
 
 vpn:
   server:

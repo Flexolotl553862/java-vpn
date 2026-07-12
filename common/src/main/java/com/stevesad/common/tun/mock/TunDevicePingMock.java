@@ -1,7 +1,6 @@
 package com.stevesad.common.tun.mock;
 
 import com.stevesad.common.tun.TunDevice;
-import com.stevesad.common.tun.TunDeviceProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @RequiredArgsConstructor
 public class TunDevicePingMock implements TunDevice {
 
-    private final TunDeviceProperties tunDeviceProperties;
+    private String address;
 
     private final Map<Short, Instant> unhandledRequests = new ConcurrentHashMap<>();
     private final AtomicInteger counter = new AtomicInteger(1);
@@ -33,8 +32,9 @@ public class TunDevicePingMock implements TunDevice {
     private Duration PING_DURATION = Duration.ofMillis(1000);
 
     @Override
-    public void start() {
+    public void start(String address, int maskLength, int mtu) {
         closed = false;
+        this.address = address;
         log.info("Opened Tun device with mock mode: PING");
     }
 
@@ -58,8 +58,7 @@ public class TunDevicePingMock implements TunDevice {
 
         short seq = (short) counter.getAndIncrement();
 
-        var packet = MockUtils.createIcmpEchoPacket(
-                        tunDeviceProperties.getAddress().getHostAddress(), "8.8.8.8", seq, (short) 0)
+        var packet = MockUtils.createIcmpEchoPacket(address, "8.8.8.8", seq, (short) 0)
                 .getRawData();
 
         unhandledRequests.put(seq, Instant.now());

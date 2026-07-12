@@ -24,7 +24,7 @@ springBoot {
 }
 
 application {
-    mainClass.set("com.stevesad.client.ui.ClientUiApplication")
+    mainClass.set("com.stevesad.client.ClientApplication")
 }
 
 javafx {

@@ -21,7 +21,7 @@ public class TunDeviceEchoMock implements TunDevice {
     private volatile boolean closed = false;
 
     @Override
-    public void start() {
+    public void start(String address, int maskLength, int mtu) {
         closed = false;
         log.info("Opened Tun device with mock mode: ECHO");
     }

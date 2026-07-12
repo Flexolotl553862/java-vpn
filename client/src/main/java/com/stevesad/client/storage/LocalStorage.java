@@ -11,9 +11,9 @@ public interface LocalStorage {
 
     List<VpnProfile> loadAllProfiles() throws Exception;
 
-    void storeTrustCert(Path cert) throws Exception;
+    Path storeTrustedCert(Path cert) throws Exception;
 
-    void deleteTrustCert(Path cert) throws Exception;
+    void deleteTrustedCert(Path cert) throws Exception;
 
-    List<Path> loadAllTrustCerts() throws Exception;
+    List<Path> loadAllTrustedCerts() throws Exception;
 }

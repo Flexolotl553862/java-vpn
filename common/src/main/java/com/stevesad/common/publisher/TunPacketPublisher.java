@@ -1,13 +1,11 @@
 package com.stevesad.common.publisher;
 
 import com.stevesad.common.tun.TunDevice;
-import com.stevesad.common.tun.TunDeviceProperties;
 import com.stevesad.common.utils.PacketUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
@@ -28,27 +26,15 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class TunPacketPublisher {
 
+    @Setter
+    private int packetBufferSize = 2000;
+
     private final TunDevice tunDevice;
-    private final TunDeviceProperties tunDeviceProperties;
 
     private ExecutorService pollingThread;
     private final Map<InetAddress, Sinks.Many<ByteBuf>> sinkByAddress = new ConcurrentHashMap<>();
     private final Sinks.Many<ByteBuf> hotSource =
             Sinks.many().multicast().onBackpressureBuffer(Queues.SMALL_BUFFER_SIZE, false);
-
-    @PostConstruct
-    public void autoStartup() {
-        if (tunDeviceProperties.isAutoStartup()) {
-            startPollingLoop();
-        }
-    }
-
-    @PreDestroy
-    public void autoShutdown() {
-        if (tunDeviceProperties.isAutoStartup()) {
-            stopPollingLoop();
-        }
-    }
 
     public synchronized void startPollingLoop() {
         if (pollingThread != null && !pollingThread.isShutdown()) {
@@ -93,7 +79,7 @@ public class TunPacketPublisher {
     }
 
     private ByteBuf receiveNettyBuf() throws IOException {
-        ByteBuf buf = PooledByteBufAllocator.DEFAULT.directBuffer(2 * tunDeviceProperties.getMtu());
+        ByteBuf buf = PooledByteBufAllocator.DEFAULT.directBuffer(packetBufferSize);
         buf.clear();
 
         int oldWriterIndex = buf.writerIndex();
@@ -111,13 +97,18 @@ public class TunPacketPublisher {
 
         ExecutorService executor = pollingThread;
         executor.shutdownNow();
-        try {
-            if (!executor.awaitTermination(2, TimeUnit.SECONDS)) {
-                log.warn("Tun publisher polling thread did not stop in time");
+
+        while (true) {
+            try {
+                if (!executor.awaitTermination(2, TimeUnit.SECONDS)) {
+                    log.warn("Tun publisher polling thread did not stop in time");
+                }
+                break;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
         }
+
         pollingThread = null;
         sinkByAddress.forEach((_, sink) -> sink.tryEmitComplete());
         sinkByAddress.clear();
