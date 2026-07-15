@@ -1,8 +1,8 @@
 package com.stevesad.common.tun.mock;
 
 import com.stevesad.common.tun.TunDevice;
-import com.stevesad.common.tun.TunDeviceProperties;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.pcap4j.packet.IllegalRawDataException;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -22,25 +22,43 @@ import java.util.concurrent.atomic.AtomicInteger;
 @RequiredArgsConstructor
 public class TunDevicePingMock implements TunDevice {
 
-    private final TunDeviceProperties tunDeviceProperties;
+    private String address;
 
     private final Map<Short, Instant> unhandledRequests = new ConcurrentHashMap<>();
     private final AtomicInteger counter = new AtomicInteger(1);
+    private volatile boolean closed = true;
 
-    private static final Duration PING_DURATION = Duration.ofMillis(100);
+    @Setter
+    private Duration PING_DURATION = Duration.ofMillis(1000);
 
     @Override
-    public int receive(ByteBuffer readBuffer, int writerIndex) {
+    public void start(String address, int maskLength, int mtu) {
+        closed = false;
+        this.address = address;
+        log.info("Opened Tun device with mock mode: PING");
+    }
+
+    @Override
+    public int receive(ByteBuffer readBuffer, int writerIndex) throws IOException {
+        if (closed) {
+            throw new IOException("Tun device already closed");
+        }
+
         try {
             Thread.sleep(PING_DURATION);
-        } catch (InterruptedException ignored) {
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             log.warn("Waiting was interrupted");
+            throw new IOException("Packet reading from Tun was interrupted", e);
+        }
+
+        if (closed) {
+            throw new IOException("Tun device already closed");
         }
 
         short seq = (short) counter.getAndIncrement();
 
-        var packet = MockUtils.createIcmpEchoPacket(
-                        tunDeviceProperties.getAddress().getHostAddress(), "8.8.8.8", seq, (short) 0)
+        var packet = MockUtils.createIcmpEchoPacket(address, "8.8.8.8", seq, (short) 0)
                 .getRawData();
 
         unhandledRequests.put(seq, Instant.now());
@@ -77,5 +95,7 @@ public class TunDevicePingMock implements TunDevice {
     }
 
     @Override
-    public void close() {}
+    public void close() {
+        closed = true;
+    }
 }

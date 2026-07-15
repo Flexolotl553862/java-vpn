@@ -17,18 +17,15 @@ repositories {
     mavenCentral()
 }
 
-dependencyManagement {
-    imports {
-        mavenBom("io.projectreactor:reactor-bom:2025.0.3")
-    }
-}
-
 dependencies {
     // Spring Boot starter
     implementation("org.springframework:spring-core")
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-logging")
     implementation("org.springframework.boot:spring-boot-starter-webclient")
+
+    // Spring Boot Shell
+    implementation("org.springframework.shell:spring-shell-starter-jansi:4.0.3")
 
     // Reactor Netty
     implementation("io.projectreactor.netty:reactor-netty-core")
@@ -45,4 +42,11 @@ dependencies {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
+    jvmArgs(
+        "--enable-native-access=ALL-UNNAMED",
+        "-Duser.home=${System.getProperty("user.home")}"
+    )
 }

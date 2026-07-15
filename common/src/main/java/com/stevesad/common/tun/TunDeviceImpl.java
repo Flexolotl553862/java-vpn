@@ -1,6 +1,5 @@
 package com.stevesad.common.tun;
 
-import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.scijava.nativelib.NativeLibraryUtil;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -46,25 +45,30 @@ public class TunDeviceImpl implements TunDevice {
         }
     }
 
-    public TunDeviceImpl(TunDeviceProperties properties) throws IOException {
+    public TunDeviceImpl(TunDeviceProperties properties) {
         this.properties = properties;
         loadNativeLib();
+    }
 
-        String[] octets = properties.getAddress().getHostAddress().split("\\.");
+    /**
+     * Direct usage is not recommended, use {@link TunDevice#start(String, int, int)} instead
+     */
+    public native int open(int address, int maskLength, int mtu) throws IOException;
+
+    @Override
+    public void start(String address, int maskLength, int mtu) throws IOException {
+        String[] octets = address.split("\\.");
         int convertedIp = 0;
 
         for (String octet : octets) {
             convertedIp = (convertedIp << 8) | Integer.parseInt(octet);
         }
 
-        open(convertedIp, properties.getMaskLength(), properties.getMtu());
-        log.info("Opened Tunnel on {}/{}", properties.getAddress().getHostAddress(), properties.getMaskLength());
+        open(convertedIp, maskLength, mtu);
+        log.info("Opened Tun device on {}/{}", address, maskLength);
     }
 
-    public native int open(int address, int maskLength, int mtu) throws IOException;
-
     @Override
-    @PreDestroy
     public native void close();
 
     @Override

@@ -1,9 +1,9 @@
 tun:
-  mock: ping
+  mock: none
 
 logging:
   level:
-    org.pcap4j: WARN
+    root: warn
 
 spring:
   main:
