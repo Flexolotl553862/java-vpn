@@ -3,4 +3,8 @@ tun:
 
 logging:
   level:
-    org.pcap4j: WARN
+    root: warn
+
+spring:
+  main:
+    banner-mode: off

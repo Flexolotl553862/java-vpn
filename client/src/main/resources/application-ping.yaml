@@ -4,3 +4,7 @@ tun:
 logging:
   level:
     org.pcap4j: WARN
+
+spring:
+  main:
+    banner-mode: off
