@@ -45,6 +45,7 @@ public class ClientLauncher extends TransactionalLauncher {
                     currentStreamSubscription = currentConnection
                             .createStream(quicClientFactory.createHandler())
                             .subscribe();
+                    currentConnection.onDispose().doFinally(_ -> stop());
                 },
                 () -> {
                     if (currentConnection != null) {
@@ -79,6 +80,7 @@ public class ClientLauncher extends TransactionalLauncher {
 
     @PreDestroy
     public synchronized void stop() {
+        currentProfile = null;
         super.rollbackSequence();
     }
 }

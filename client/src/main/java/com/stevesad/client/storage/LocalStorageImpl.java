@@ -40,8 +40,8 @@ public class LocalStorageImpl implements LocalStorage {
         Files.createDirectories(profileDir);
 
         Path cert = Files.copy(
-                profile.getCertificatePath(),
-                profileDir.resolve(profile.getCertificatePath().getFileName()),
+                profile.getCertificateChainPath(),
+                profileDir.resolve(profile.getCertificateChainPath().getFileName()),
                 StandardCopyOption.REPLACE_EXISTING);
         Path privateKey = Files.copy(
                 profile.getPrivateKeyPath(),
@@ -53,10 +53,11 @@ public class LocalStorageImpl implements LocalStorage {
             Files.createFile(settings);
         }
 
-        profile.setCertificatePath(cert);
+        profile.setCertificateChainPath(cert);
         profile.setPrivateKeyPath(privateKey);
 
-        Files.writeString(settings, objectMapper.writeValueAsString(profile));
+        Files.writeString(
+                settings, objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(profile));
     }
 
     @Override

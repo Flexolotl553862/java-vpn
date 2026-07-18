@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.stevesad"
-description = "vpn-client"
+description = "java-vpn-client"
 
 configurations {
     compileOnly {
