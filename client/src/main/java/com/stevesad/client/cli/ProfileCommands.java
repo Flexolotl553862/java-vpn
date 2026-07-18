@@ -34,16 +34,16 @@ public class ProfileCommands {
     public String show(@Argument(index = 0, description = "Profile name") String name) throws Exception {
         VpnProfile profile = profile(name);
         return """
-            Name:         %s
-            Address:      %s:%d
-            certificate:  %s
-            private key:  %s
-            routes:       %s\
+            Name:               %s
+            Address:            %s:%d
+            certificate chain:  %s
+            private key:        %s
+            routes:             %s\
             """.formatted(
                         profile.getName(),
                         profile.getServerHost(),
                         profile.getServerPort(),
-                        profile.getCertificatePath(),
+                        profile.getCertificateChainPath(),
                         profile.getPrivateKeyPath(),
                         String.join(", ", profile.getRoutes()));
     }
@@ -55,7 +55,7 @@ public class ProfileCommands {
             @Option(longName = "name", shortName = 'n', description = "Profile name", required = true) String name,
             @Option(longName = "host", shortName = 'h', description = "Server host", required = true) String host,
             @Option(longName = "port", shortName = 'p', description = "Server port", required = true) int port,
-            @Option(longName = "cert", shortName = 'c', description = "Certificate path", required = true)
+            @Option(longName = "chain", shortName = 'c', description = "Certificate chain path", required = true)
                     String certificate,
             @Option(longName = "key", shortName = 'k', description = "Private key path", required = true)
                     String privateKey,

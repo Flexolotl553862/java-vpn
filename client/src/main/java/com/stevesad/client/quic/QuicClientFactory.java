@@ -49,7 +49,7 @@ public class QuicClientFactory {
                 .keyManager(
                         profile.getPrivateKeyPath().toFile(),
                         null,
-                        profile.getCertificatePath().toFile())
+                        profile.getCertificateChainPath().toFile())
                 .applicationProtocols("h3")
                 .build();
     }

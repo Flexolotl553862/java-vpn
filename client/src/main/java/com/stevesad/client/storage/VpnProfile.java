@@ -22,7 +22,7 @@ public class VpnProfile {
 
     private int serverPort;
 
-    private Path certificatePath;
+    private Path certificateChainPath;
 
     private Path privateKeyPath;
 
@@ -34,7 +34,7 @@ public class VpnProfile {
     }
 
     public Inet4Address getClientAddress() throws Exception {
-        X509Certificate cert = CertificateUtils.parseCertificate(Files.readString(certificatePath));
+        X509Certificate cert = CertificateUtils.parseCertificate(Files.readString(certificateChainPath));
         return Inet4Address.ofLiteral(CertificateUtils.extractCN(cert));
     }
 }

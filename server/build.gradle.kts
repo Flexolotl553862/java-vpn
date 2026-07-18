@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.stevesad"
-description = "VPN Server"
+description = "java-vpn-server"
 
 configurations {
     compileOnly {
@@ -17,12 +17,6 @@ repositories {
     mavenCentral()
 }
 
-dependencyManagement {
-    imports {
-        mavenBom("io.projectreactor:reactor-bom:2025.0.3")
-    }
-}
-
 dependencies {
     // Spring Boot starters
     implementation("org.springframework.boot:spring-boot-starter")
@@ -30,7 +24,6 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-liquibase")
-    implementation("org.springframework.boot:spring-boot-starter-security")
 
     // PostgreSQL
     implementation("org.postgresql:postgresql:42.7.11")

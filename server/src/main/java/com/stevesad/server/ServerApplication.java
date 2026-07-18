@@ -1,12 +1,11 @@
 package com.stevesad.server;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.security.autoconfigure.ReactiveUserDetailsServiceAutoConfiguration;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
-@SpringBootApplication(exclude = ReactiveUserDetailsServiceAutoConfiguration.class)
-@RequiredArgsConstructor
+@EnableScheduling
+@SpringBootApplication
 public class ServerApplication {
 
     static void main(String[] args) {
